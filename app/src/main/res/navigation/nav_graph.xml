@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/songsFragment">
+
+    <fragment
+        android:id="@+id/songsFragment"
+        android:name="com.example.konmusicplayer.ui.songs.SongsFragment"
+        android:label="Kon Music Player"
+        tools:layout="@layout/fragment_songs" >
+        <action
+            android:id="@+id/action_songsFragment_to_playlistsFragment"
+            app:destination="@id/playlistsFragment" />
+        <action
+            android:id="@+id/action_songsFragment_to_favoritesFragment"
+            app:destination="@id/favoritesFragment" />
+        <action
+            android:id="@+id/action_songsFragment_to_musicPlayerActivity"
+            app:destination="@id/playerFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/playlistsFragment"
+        android:name="com.example.konmusicplayer.ui.playlists.PlaylistsFragment"
+        android:label="Playlists"
+        tools:layout="@layout/fragment_playlists" >
+        <action
+            android:id="@+id/action_playlistsFragment_to_playlistOpenedFragment"
+            app:destination="@id/playlistOpenedFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/favoritesFragment"
+        android:name="com.example.konmusicplayer.ui.favorites.FavoritesFragment"
+        android:label="Favorites"
+        tools:layout="@layout/fragment_favorites" >
+        <action
+            android:id="@+id/action_favoritesFragment_to_musicPlayerActivity"
+            app:destination="@id/playerFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/playerFragment"
+        android:name="com.example.konmusicplayer.ui.player.PlayerFragment"
+        android:label="KonMusicPlayer"
+        tools:layout="@layout/fragment_player" >
+        <action
+            android:id="@+id/action_playerFragment_to_queueFragment"
+            app:destination="@id/queueFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/playlistOpenedFragment"
+        android:name="com.example.konmusicplayer.ui.playlistopened.PlaylistOpenedFragment"
+        android:label=""
+        tools:layout="@layout/fragment_playlist_opened" >
+        <action
+            android:id="@+id/action_playlistOpenedFragment_to_musicPlayerActivity"
+            app:destination="@id/playerFragment" />
+        <argument
+            android:name="playlistId"
+            app:argType="integer" />
+        <action
+            android:id="@+id/action_playlistOpenedFragment_to_selectionFragment"
+            app:destination="@id/selectionFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/selectionFragment"
+        android:name="com.example.konmusicplayer.ui.selection.SelectionFragment"
+        android:label="Select songs"
+        tools:layout="@layout/fragment_selection" >
+        <argument
+            android:name="actionType"
+            app:argType="integer"
+            android:defaultValue="0" />
+        <argument
+            android:name="playlistId"
+            app:argType="integer"
+            android:defaultValue="0" />
+    </fragment>
+    <fragment
+        android:id="@+id/queueFragment"
+        android:name="com.example.konmusicplayer.ui.queue.QueueFragment"
+        android:label="Queue"
+        tools:layout="@layout/fragment_queue" />
+</navigation>
