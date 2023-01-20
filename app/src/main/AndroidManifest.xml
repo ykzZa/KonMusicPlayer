@@ -13,14 +13,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.KonMusicPlayer"
+        android:requestLegacyExternalStorage="true"
         tools:targetApi="31">
-        <activity
-            android:name=".ui.player.MusicPlayerActivity"
-            android:exported="false">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.example.konmusicplayer.MainActivity" />
-        </activity>
         <activity
             android:name=".MainActivity"
             android:exported="true"

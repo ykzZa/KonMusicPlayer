@@ -54,7 +54,7 @@ class PlaylistsFragment : Fragment(R.layout.fragment_playlists), PlaylistsAdapte
     }
 
     private fun addAlertDialog(){
-        val customDialog = LayoutInflater.from(context).inflate(R.layout.add_playlist, binding.root, false)
+        val customDialog: View = LayoutInflater.from(context).inflate(R.layout.add_playlist, binding.root, false)
         val binder = AddPlaylistBinding.bind(customDialog)
         val builder = context?.let { MaterialAlertDialogBuilder(it) }
         val dialog = builder?.setView(customDialog)

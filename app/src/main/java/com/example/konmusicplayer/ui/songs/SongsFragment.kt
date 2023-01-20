@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
 import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
@@ -21,9 +20,7 @@ import com.example.konmusicplayer.MainActivity
 import com.example.konmusicplayer.R
 import com.example.konmusicplayer.data.songs.Song
 import com.example.konmusicplayer.databinding.FragmentSongsBinding
-import com.example.konmusicplayer.utils.recreateFragment
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -48,7 +45,8 @@ class SongsFragment : Fragment(R.layout.fragment_songs), SongsAdapter.OnItemClic
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        if(!MainActivity.firstLaunch) {
+        if(context?.let { ActivityCompat.checkSelfPermission(it, Manifest.permission.READ_EXTERNAL_STORAGE) }
+            == PackageManager.PERMISSION_GRANTED) {
             fillDatabase(audioList)
         }
         pos = MainActivity.currentSongPos
