@@ -7,7 +7,6 @@ import android.media.MediaPlayer
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Handler
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
@@ -15,14 +14,17 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavController
-import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
 import com.example.konmusicplayer.data.songs.Song
 import com.example.konmusicplayer.databinding.ActivityMainBinding
+import com.example.konmusicplayer.ui.favorites.FavoritesFragment
+import com.example.konmusicplayer.ui.playlists.PlaylistsFragment
+import com.example.konmusicplayer.ui.songs.SongsFragment
 import com.example.konmusicplayer.ui.songs.SongsViewModel
 
 class MainActivity : AppCompatActivity() {
@@ -33,10 +35,13 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         val mediaPlayer = MediaPlayer()
-        var currentSongPos = 0
+        var currentSongPos = MutableLiveData(0)
         var songsList = listOf<Song>()
         var playingMode = 0 // 0 - stop when list end, 1 - list loop, 2 - song loop
-        var firstLaunch = true
+        @SuppressLint("StaticFieldLeak")
+        lateinit var cardViewPlaying: View
+        @SuppressLint("StaticFieldLeak")
+        lateinit var bottomNav: View
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,53 +52,34 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        var pos = 0
-
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.findNavController()
 
         setupActionBarWithNavController(navController)
 
-        Log.i("KITTY", "BOOBA")
         requestRuntimePermission()
 
-        binding.cardViewPlaying.setOnClickListener {
-            binding.cardViewPlaying.visibility = View.GONE
-            navController.navigate(R.id.playerFragment)
-        }
+        cardViewPlaying = binding.cardViewPlaying
+        bottomNav = binding.bottomNavigation
 
-        val handler = Handler()
-        handler.postDelayed(object: Runnable{
-            override fun run() {
-                try {
-                    if(pos != currentSongPos || (pos == 0 && mediaPlayer.isPlaying)) {
-                        binding.textViewCurrentSong.text = songsList[currentSongPos].name
-                        pos = currentSongPos
-                    }
-                    if(songsList.isNotEmpty()) {
-                        if(navController.currentDestination?.id == R.id.playerFragment || navController.currentDestination?.id == R.id.queueFragment){
-                            binding.cardViewPlaying.visibility = View.GONE
-                        } else {
-                            binding.cardViewPlaying.visibility = View.VISIBLE
-                        }
-                    }
-                    handler.postDelayed(this, 1000)
-                } catch (_: Exception) {
-                }
+        binding.apply {
+            cardViewPlaying.setOnClickListener {
+                navController.navigate(R.id.playerFragment)
             }
-
-        }, 0)
+            bottomNavigation.setupWithNavController(navController)
+        }
+        currentSongPos.observe(this) {
+            if(songsList.isNotEmpty()) {
+                binding.textViewCurrentSong.text = songsList[currentSongPos.value!!].name
+            }
+        }
     }
 
     private fun requestRuntimePermission(){
-        Log.i("KITTY", ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE).toString())
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
             != PackageManager.PERMISSION_GRANTED) {
-            Log.i("KITTY", "CASE S")
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 113)
-        } else {
-            firstLaunch = false
         }
     }
 
@@ -121,7 +107,8 @@ class MainActivity : AppCompatActivity() {
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.DISPLAY_NAME,
-            MediaStore.Audio.Media.DATA
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.ALBUM_ID
         )
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
@@ -132,7 +119,8 @@ class MainActivity : AppCompatActivity() {
             while (cursor.moveToNext()) {
                 val name = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME))
                 val path = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA))
-                val audio = Song(name, path)
+                val albumId = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+                val audio = Song(name, path, albumId)
                 audioList[path] = audio
             }
             cursor.close()

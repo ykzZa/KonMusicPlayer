@@ -22,7 +22,7 @@ interface PlaylistWithSongsDao {
     @Query("SELECT * FROM playlist_table WHERE playlistId = :playlistId")
     fun getSongsOfPlaylist(playlistId: Int): LiveData<List<PlaylistWithSongs>>
 
-    @Query("SELECT song_table.name, song_table.path, song_table.favorite, song_table.songId FROM song_table LEFT JOIN playlist_songs_table " +
+    @Query("SELECT song_table.name, song_table.path, song_table.favorite, song_table.albumId, song_table.songId FROM song_table LEFT JOIN playlist_songs_table " +
             "ON song_table.songId = playlist_songs_table.songId " +
             "AND playlist_songs_table.playlistId = :playlistId" +
             " WHERE playlist_songs_table.songId IS NULL" )

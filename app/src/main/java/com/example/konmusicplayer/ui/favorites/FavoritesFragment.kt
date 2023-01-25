@@ -67,7 +67,7 @@ class FavoritesFragment : Fragment(R.layout.fragment_favorites),
             findNavController().navigate(R.id.playerFragment)
             MainActivity.songsList = songsList.shuffled()
             MainActivity.apply {
-                currentSongPos = 0
+                currentSongPos.value = 0
                 mediaPlayer.apply {
                     reset()
                     setDataSource(songsList[0].path)
@@ -82,7 +82,7 @@ class FavoritesFragment : Fragment(R.layout.fragment_favorites),
         findNavController().navigate(R.id.playerFragment)
         MainActivity.songsList = songsList
         MainActivity.apply {
-            currentSongPos = pos
+            currentSongPos.value = pos
             mediaPlayer.apply {
                 reset()
                 setDataSource(song.path)

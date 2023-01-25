@@ -1,18 +1,19 @@
 package com.example.konmusicplayer.ui.player
 
+import android.content.ContentUris
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.SeekBar
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.bullhead.equalizer.DialogEqualizerFragment
+import com.bumptech.glide.Glide
 import com.example.konmusicplayer.MainActivity
 import com.example.konmusicplayer.R
 import com.example.konmusicplayer.databinding.FragmentPlayerBinding
-import com.example.konmusicplayer.utils.recreateFragment
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -21,41 +22,35 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
 
     private lateinit var binding: FragmentPlayerBinding
 
+    override fun onDestroy() {
+        super.onDestroy()
+        MainActivity.cardViewPlaying.visibility = View.VISIBLE
+        MainActivity.bottomNav.visibility = View.VISIBLE
+    }
+
+    override fun onResume() {
+        super.onResume()
+        MainActivity.cardViewPlaying.visibility = View.GONE
+        MainActivity.bottomNav.visibility = View.GONE
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         binding = FragmentPlayerBinding.bind(view)
 
         onPlayingEnd()
+        viewUpdate()
 
         binding.apply {
-            buttonPlayPause.apply {
-                if(MainActivity.mediaPlayer.isPlaying) {
-                    setImageResource(R.drawable.ic_baseline_pause_circle_24)
-                } else {
-                    setImageResource(R.drawable.ic_baseline_play_circle_24)
-                }
-            }
-            cardViewNext.setOnClickListener {
-                onNextClick()
-            }
-            cardViewPlayPause.setOnClickListener {
-                onPlayPauseClick()
-            }
-            cardViewPrev.setOnClickListener {
-                onPrevClick()
-            }
-            cardViewRepeat.setOnClickListener {
-                onRepeatClick()
-            }
-            cardViewEqualizer.setOnClickListener {
-                onEqualizerClick()
-            }
-            cardViewQueue.setOnClickListener {
-                onQueueClick()
-            }
+            songImageView.apply { extractAlbumArt(this) }
+            cardViewNext.setOnClickListener { onNextClick() }
+            cardViewPlayPause.setOnClickListener { onPlayPauseClick() }
+            cardViewPrev.setOnClickListener { onPrevClick() }
+            cardViewRepeat.setOnClickListener { onRepeatClick() }
+            cardViewQueue.setOnClickListener { onQueueClick() }
             buttonMode.apply {
-                when(MainActivity.playingMode){
+                when (MainActivity.playingMode) {
                     0 -> setImageResource(R.drawable.ic_baseline_repeat_24)
                     1 -> setImageResource(R.drawable.ic_baseline_repeat_on_24)
                     2 -> setImageResource(R.drawable.ic_baseline_repeat_one_24)
@@ -63,20 +58,6 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
             }
             songSeekbar.apply {
                 MainActivity.apply {
-                    max = mediaPlayer.duration
-                    val handler = Handler()
-                    handler.postDelayed(object: Runnable{
-                        override fun run() {
-                            try {
-                                songSeekbar.progress = mediaPlayer.currentPosition
-                                textViewCurrentTime.text = SimpleDateFormat("mm:ss").format(Date(mediaPlayer.currentPosition.toLong()))
-                                handler.postDelayed(this, 10)
-                            } catch (e: Exception) {
-                                songSeekbar.progress = 0
-                            }
-                        }
-
-                    }, 0)
                     setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                         override fun onProgressChanged(
                             seekBar: SeekBar?,
@@ -84,24 +65,53 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
                             fromUser: Boolean
                         ) {
                             if (fromUser) mediaPlayer.seekTo(progress)
-                            textViewCurrentTime.text = SimpleDateFormat("mm:ss").format(Date(mediaPlayer.currentPosition.toLong()))
+                            textViewCurrentTime.text =
+                                SimpleDateFormat("mm:ss", Locale("ua", "UA")).format(
+                                    Date(mediaPlayer.currentPosition.toLong())
+                                )
                         }
-
-                        override fun onStartTrackingTouch(p0: SeekBar?) {
-                        }
-
-                        override fun onStopTrackingTouch(p0: SeekBar?) {
-
-                        }
-
+                        override fun onStartTrackingTouch(p0: SeekBar?) {}
+                        override fun onStopTrackingTouch(p0: SeekBar?) {}
                     })
                 }
             }
             MainActivity.apply {
-                textViewSongName.text = songsList[currentSongPos].name
-                textViewDuration.text = SimpleDateFormat("mm:ss").format(Date(mediaPlayer.duration.toLong()))
+                currentSongPos.observe(viewLifecycleOwner) {
+                    textViewSongName.apply {
+                        text = songsList[it].name
+                        textViewSongName.isSelected = true
+                    }
+                    songImageView.apply {
+                        val sArtworkUri = Uri.parse("content://media/external/audio/albumart")
+                        val uri = ContentUris.withAppendedId(
+                            sArtworkUri,
+                            songsList[it].albumId.toLong()
+                        )
+                        Glide.with(context)
+                            .load(uri)
+                            .placeholder(R.drawable.ic_splash_screen)
+                            .error(R.drawable.ic_splash_screen)
+                            .centerCrop()
+                            .into(this)
+                    }
+                }
+                val handler = Handler()
+                handler.postDelayed(object: Runnable{
+                    override fun run() {
+                        try {
+                            songSeekbar.progress = mediaPlayer.currentPosition
+                            textViewCurrentTime.text = SimpleDateFormat("mm:ss", Locale("ua", "UA")).format(
+                                Date(mediaPlayer.currentPosition.toLong())
+                            )
+                            handler.postDelayed(this, 10)
+                        } catch (e: Exception) {
+                            songSeekbar.progress = 0
+                        }
+                    }
+
+                }, 0)
             }
-            textViewSongName.isSelected = true
+
         }
     }
 
@@ -109,20 +119,8 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
         findNavController().navigate(R.id.queueFragment)
     }
 
-    private fun onEqualizerClick() {
-        val fragment = DialogEqualizerFragment.newBuilder()
-            .setAudioSessionId(MainActivity.mediaPlayer.audioSessionId)
-            .themeColor(ContextCompat.getColor(requireContext(), R.color.white))
-            .textColor(ContextCompat.getColor(requireContext(), R.color.black))
-            .accentAlpha(ContextCompat.getColor(requireContext(), R.color.blue_icon))
-            .darkColor(ContextCompat.getColor(requireContext(), R.color.blue_icon))
-            .setAccentColor(ContextCompat.getColor(requireContext(), R.color.light_blue_icon))
-            .build()
-        fragmentManager?.let { fragment.show(it, "eq") }
-    }
-
     private fun onRepeatClick() {
-        when(MainActivity.playingMode) {
+        when (MainActivity.playingMode) {
             0 -> {
                 MainActivity.playingMode = 1
                 binding.buttonMode.setImageResource(R.drawable.ic_baseline_repeat_on_24)
@@ -140,21 +138,19 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
         }
     }
 
-
-
-
     private fun onNextClick() {
-        when(MainActivity.playingMode) {
+        when (MainActivity.playingMode) {
             0 -> {
                 MainActivity.apply {
                     mediaPlayer.apply {
-                        reset()
-                        if(currentSongPos + 1 == songsList.size) {
+                        if ((currentSongPos.value ?: 0) + 1 == songsList.size) {
                             mediaPlayerPrepareStart()
                             pause()
+                            viewUpdate()
                         } else {
-                            currentSongPos += 1
+                            currentSongPos.value = currentSongPos.value?.plus(1)
                             mediaPlayerPrepareStart()
+                            viewUpdate()
                         }
                     }
                 }
@@ -162,13 +158,14 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
             1 -> {
                 MainActivity.apply {
                     mediaPlayer.apply {
-                        reset()
-                        if(currentSongPos + 1 == songsList.size) {
-                            currentSongPos = 0
+                        if ((currentSongPos.value ?: 0) + 1 == songsList.size) {
+                            currentSongPos.value = 0
                             mediaPlayerPrepareStart()
+                            viewUpdate()
                         } else {
-                            currentSongPos += 1
+                            currentSongPos.value = currentSongPos.value?.plus(1)
                             mediaPlayerPrepareStart()
+                            viewUpdate()
                         }
                     }
                 }
@@ -176,36 +173,38 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
             2 -> {
                 MainActivity.apply {
                     mediaPlayer.apply {
-                        reset()
-                        if(currentSongPos + 1 == songsList.size) {
+                        if ((currentSongPos.value ?: 0) + 1 == songsList.size) {
                             mediaPlayerPrepareStart()
                             mediaPlayer.isLooping = true
                             binding.buttonPlayPause.setImageResource(R.drawable.ic_baseline_play_circle_24)
                             pause()
+                            viewUpdate()
                         } else {
-                            currentSongPos += 1
+                            currentSongPos.value = currentSongPos.value?.plus(1)
                             mediaPlayerPrepareStart()
                             mediaPlayer.isLooping = true
+                            viewUpdate()
                         }
                     }
                 }
             }
         }
-        recreateFragment()
     }
 
     private fun onPrevClick() {
-        when(MainActivity.playingMode) {
+        when (MainActivity.playingMode) {
             0 -> {
                 MainActivity.apply {
                     mediaPlayer.apply {
-                        if(currentSongPos == 0) {
+                        if (currentSongPos.value == 0) {
                             mediaPlayer.seekTo(0)
                             start()
+                            viewUpdate()
                         } else {
-                            currentSongPos -= 1
+                            currentSongPos.value = currentSongPos.value?.minus(1)
                             reset()
                             mediaPlayerPrepareStart()
+                            viewUpdate()
                         }
                     }
                 }
@@ -213,13 +212,14 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
             1 -> {
                 MainActivity.apply {
                     mediaPlayer.apply {
-                        reset()
-                        if(currentSongPos == 0) {
-                            currentSongPos = songsList.size - 1
+                        if (currentSongPos.value == 0) {
+                            currentSongPos.value = songsList.size - 1
                             mediaPlayerPrepareStart()
+                            viewUpdate()
                         } else {
-                            currentSongPos -= 1
+                            currentSongPos.value = currentSongPos.value?.minus(1)
                             mediaPlayerPrepareStart()
+                            viewUpdate()
                         }
                     }
                 }
@@ -227,28 +227,28 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
             2 -> {
                 MainActivity.apply {
                     mediaPlayer.apply {
-                        reset()
-                        if(currentSongPos == 0) {
+                        if (currentSongPos.value == 0) {
                             mediaPlayerPrepareStart()
                             mediaPlayer.isLooping = true
                             binding.buttonPlayPause.setImageResource(R.drawable.ic_baseline_play_circle_24)
                             pause()
                             start()
+                            viewUpdate()
                         } else {
-                            currentSongPos -= 1
+                            currentSongPos.value = currentSongPos.value?.minus(1)
                             mediaPlayerPrepareStart()
                             mediaPlayer.isLooping = true
+                            viewUpdate()
                         }
                     }
                 }
             }
         }
-        recreateFragment()
     }
 
     private fun onPlayPauseClick() {
         MainActivity.mediaPlayer.apply {
-            if(isPlaying){
+            if (isPlaying) {
                 pause()
                 binding.buttonPlayPause.setImageResource(R.drawable.ic_baseline_play_circle_24)
             } else {
@@ -264,33 +264,26 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
                 setOnCompletionListener {
                     when (playingMode) {
                         0 -> {
-                            if (currentSongPos + 1 == songsList.size) {
+                            if ((currentSongPos.value ?: 0) + 1 == songsList.size) {
                                 binding.buttonPlayPause.setImageResource(R.drawable.ic_baseline_play_circle_24)
                                 pause()
+                                viewUpdate()
                             } else {
-                                reset()
-                                currentSongPos += 1
+                                currentSongPos.value = currentSongPos.value?.plus(1)
                                 mediaPlayerPrepareStart()
-                                try {
-                                    recreateFragment()
-                                } catch (_: IllegalStateException) {
-                                    Log.i("FRG2", "sd")
-                                }
+                                viewUpdate()
                             }
                         }
-                        1 ->  {
+                        1 -> {
                             mediaPlayer.apply {
-                                reset()
-                                if (currentSongPos + 1 == songsList.size) {
-                                    currentSongPos = 0
+                                if ((currentSongPos.value ?: 0) + 1 == songsList.size) {
+                                    currentSongPos.value = 0
                                     mediaPlayerPrepareStart()
+                                    viewUpdate()
                                 } else {
-                                    currentSongPos += 1
+                                    currentSongPos.value = currentSongPos.value?.plus(1)
                                     mediaPlayerPrepareStart()
-                                }
-                                try {
-                                    recreateFragment()
-                                } catch (_: IllegalStateException) {
+                                    viewUpdate()
                                 }
                             }
                         }
@@ -300,11 +293,47 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
         }
     }
 
+    private fun viewUpdate() {
+        binding.apply {
+            buttonPlayPause.apply {
+                if (MainActivity.mediaPlayer.isPlaying) {
+                    setImageResource(R.drawable.ic_baseline_pause_circle_24)
+                } else {
+                    setImageResource(R.drawable.ic_baseline_play_circle_24)
+                }
+            }
+            textViewDuration.text = SimpleDateFormat(
+                "mm:ss",
+                Locale("ua", "UA")
+            ).format(Date(MainActivity.mediaPlayer.duration.toLong()))
+            songSeekbar.apply {
+                max = MainActivity.mediaPlayer.duration
+                progress = 0
+            }
+        }
+    }
 
+    private fun extractAlbumArt(imgView: ImageView) {
+        val sArtworkUri = Uri.parse("content://media/external/audio/albumart")
+        val uri = ContentUris.withAppendedId(
+            sArtworkUri,
+            MainActivity.songsList[MainActivity.currentSongPos.value!!].albumId.toLong()
+        )
+        context?.let {
+            Glide.with(it)
+                .load(uri)
+                .placeholder(R.drawable.ic_splash_screen)
+                .error(R.drawable.ic_splash_screen)
+                .centerCrop()
+                .into(imgView)
+        }
+    }
 
     private fun mediaPlayerPrepareStart() {
         MainActivity.mediaPlayer.apply {
-            setDataSource(MainActivity.songsList[MainActivity.currentSongPos].path)
+            reset()
+            Log.i("CATACAK", "media player edited")
+            setDataSource(MainActivity.songsList[MainActivity.currentSongPos.value!!].path)
             prepare()
             start()
         }

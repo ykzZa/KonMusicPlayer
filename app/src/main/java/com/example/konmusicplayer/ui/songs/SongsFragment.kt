@@ -70,11 +70,6 @@ class SongsFragment : Fragment(R.layout.fragment_songs), SongsAdapter.OnItemClic
                 layoutManager = LinearLayoutManager(requireContext())
                 setHasFixedSize(true)
             }
-            cardViewPlaylists.setOnClickListener { playlistsOnClicked() }
-
-            cardViewFavorites.setOnClickListener { favoritesOnClicked() }
-
-            cardViewShuffle.setOnClickListener { shuffleOnClicked() }
         }
     }
 
@@ -104,7 +99,8 @@ class SongsFragment : Fragment(R.layout.fragment_songs), SongsAdapter.OnItemClic
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.DISPLAY_NAME,
-            MediaStore.Audio.Media.DATA
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.ALBUM_ID
         )
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
@@ -115,7 +111,8 @@ class SongsFragment : Fragment(R.layout.fragment_songs), SongsAdapter.OnItemClic
             while (cursor.moveToNext()) {
                 val name = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME))
                 val path = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA))
-                val audio = Song(name, path)
+                val albumId = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+                val audio = Song(name, path, albumId)
                 audioList[path] = audio
             }
             cursor.close()
@@ -136,7 +133,7 @@ class SongsFragment : Fragment(R.layout.fragment_songs), SongsAdapter.OnItemClic
             findNavController().navigate(R.id.playerFragment)
             MainActivity.songsList = songsList.shuffled()
             MainActivity.apply {
-                currentSongPos = 0
+                currentSongPos.value = 0
                 mediaPlayer.apply {
                     reset()
                     setDataSource(songsList[0].path)
@@ -152,7 +149,7 @@ class SongsFragment : Fragment(R.layout.fragment_songs), SongsAdapter.OnItemClic
             findNavController().navigate(R.id.playerFragment)
             MainActivity.songsList = songsList
             MainActivity.apply {
-                currentSongPos = pos
+                currentSongPos.value = pos
                 mediaPlayer.apply {
                     reset()
                     setDataSource(song.path)

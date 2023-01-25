@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class Song(
     val name: String,
     val path: String,
+    val albumId: String,
     var favorite: Boolean = false,
     @PrimaryKey(autoGenerate = true) val songId: Int = 0
 )

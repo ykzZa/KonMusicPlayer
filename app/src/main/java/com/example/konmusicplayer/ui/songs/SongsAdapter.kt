@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.konmusicplayer.MainActivity
 import com.example.konmusicplayer.data.songs.Song
 import com.example.konmusicplayer.databinding.ItemSongBinding
 
@@ -39,6 +40,7 @@ class SongsAdapter(private val listener: OnItemClickListener): ListAdapter<Song,
                         listener.onCheckBoxClick(task, checkBoxFavorite.isChecked)
                     }
                 }
+
             }
         }
 
